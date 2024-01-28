@@ -10,16 +10,15 @@
 #include <AudioToolbox/AudioToolbox.h>
 #include <stdio.h>
 
-// Audio Unit render callback
-// https://developer.apple.com/documentation/audiotoolbox/aurendercallback?language=objc
 // We won't even get to the point of hitting this callback without more initialization code,
 // but it seems nice to leave in here anyway.
+// https://developer.apple.com/documentation/audiotoolbox/aurendercallback?language=objc
 static OSStatus RenderCallback(void *inRefCon,
-                        AudioUnitRenderActionFlags *ioActionFlags,
-                        const AudioTimeStamp *inTimeStamp,
-                        UInt32 inBusNumber,
-                        UInt32 inNumberFrames,
-                        AudioBufferList *ioData) 
+                               AudioUnitRenderActionFlags *ioActionFlags,
+                               const AudioTimeStamp *inTimeStamp,
+                               UInt32 inBusNumber,
+                               UInt32 inNumberFrames,
+                               AudioBufferList *ioData) 
 {
   for (UInt32 channel = 0; channel < ioData->mNumberBuffers; channel++) {
     Float32 *data = (Float32 *)ioData->mBuffers[channel].mData;
@@ -30,27 +29,30 @@ static OSStatus RenderCallback(void *inRefCon,
   return noErr;
 }
 
+// Initialize will be called before your plugin is asked to actually process audio.
 static OSStatus Initialize(void* ptr) { return noErr; }
 static OSStatus Uninitialize(void* ptr) { return noErr; }
 
 typedef AudioComponentMethod Method;
 
+// This is missing a lot of functions that you'll want to respond to in a real plugin.
 static AudioComponentMethod Lookup(SInt16 selector) {
   switch (selector) {
-    case kAudioUnitRenderSelect: return (Method) RenderCallback;
-    case kAudioUnitInitializeSelect: return (Method) Initialize;
+    case kAudioUnitRenderSelect:       return (Method) RenderCallback;
+    case kAudioUnitInitializeSelect:   return (Method) Initialize;
     case kAudioUnitUninitializeSelect: return (Method) Uninitialize;
-    default: break;
+    default:                           return NULL;
   }
-  return NULL;
 }
 
-// Initialization function, not allocation, as far as I can tell
+// This should be called when you actually open the plugin in your DAW. Allocate the main 
+// memory for your plugin here. (The factory function just allocates memory to hold a few
+// function pointers.)
 static OSStatus Open(void* ptr, AudioUnit compInstance) {
   return noErr;
 }
 
-// Seems like this wants to free the memory we allocated in Factory
+// Free your main plugin memory here.
 static OSStatus Close(void* ptr) {
   return noErr;
 }
